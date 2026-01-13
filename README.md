@@ -12,7 +12,7 @@ An interactive sandbox for learning **PID control** by tuning a differential-dri
 
 > **Demo** 
 >
-> ![Demo](assets/demo.gif)
+> ![Demo](assets/demo.mp4)
 
 ---
 
