@@ -1,4 +1,4 @@
-# PID Equation Tuning Trainer (Pygame)
+# PID Trainer
 **By Jacky Li from HKUST**
 
 An interactive simulator for learning **PID control** by tuning a differential-drive “robot” to track a moving centerline.  
