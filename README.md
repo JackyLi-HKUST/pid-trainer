@@ -13,7 +13,7 @@ An interactive sandbox for learning **PID control** by tuning a differential-dri
 
 ## Quick Demo
 
-https://github.com/JackyLi-HKUST/pid-trainer/blob/main/assets/demo.mp4 
+https://github.com/user-attachments/assets/d381ae2f-4b01-4fbb-9070-9d1a7aeb0f99
 
 ---
 
