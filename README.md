@@ -117,19 +117,19 @@ Weights you can tune in the code:
     PID-Trainer/
     ├─ pid_trainer/
     │  ├─ __init__.py
-    │  ├─ __main__.py
+    │  ├─ config.py
     │  ├─ app.py
-    │  ├─ settings.py
     │  ├─ utils.py
     │  ├─ track.py
     │  ├─ sim.py
     │  ├─ shadow.py
     │  └─ auto.py
+    ├─ math.md 
     ├─ README.md
     ├─ LICENSE
     ├─ requirements.txt
     └─ assets/
-       └─ demo.gif
+       └─ demo.mp4
 
 ---
 
