@@ -41,8 +41,8 @@ An interactive sandbox for learning **PID control** by tuning a differential-dri
 
 
 ## Requirements
-- Python **3.9+** (recommended)
-- `pygame`
+- Python **3.10+**
+- `pygame` (see `requirements.txt`)
 
 ---
 
@@ -51,7 +51,7 @@ An interactive sandbox for learning **PID control** by tuning a differential-dri
     python -m venv .venv
     source .venv/bin/activate   # macOS/Linux
     # .venv\Scripts\activate    # Windows
-    pip install pygame
+    pip install -r requirements.txt
 
 Optional `requirements.txt`:
     pygame>=2.0
@@ -60,9 +60,7 @@ Optional `requirements.txt`:
 
 ## Run
 
-    python pid_trainer.py
-
-(Replace `pid_trainer.py` with your actual filename if different.)
+    python -m pid_trainer
 
 ---
 
@@ -115,14 +113,21 @@ Weights you can tune in the code:
 ## Suggested Project Structure
 
     PID-Trainer/
-    ├─ pid_trainer.py
+    ├─ pid_trainer/
+    │  ├─ __init__.py
+    │  ├─ __main__.py
+    │  ├─ app.py
+    │  ├─ settings.py
+    │  ├─ utils.py
+    │  ├─ track.py
+    │  ├─ sim.py
+    │  ├─ shadow.py
+    │  └─ auto.py
     ├─ README.md
     ├─ LICENSE
-    ├─ docs/
-    │  ├─ demo.gif
-    │  ├─ screenshot_hud.png
-    │  └─ screenshot_auto.png
-    └─ requirements.txt
+    ├─ requirements.txt
+    └─ assets/
+       └─ demo.gif
 
 ---
 
