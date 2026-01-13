@@ -1,284 +1,287 @@
 <!-- math.md -->
-# PID Trainer — Math Notes (PID Sandbox)
+# PID Trainer — Math
 
-This file explains the **math behind the PID sandbox** and how it maps to the simulation code.
-
----
-
-## 1. Discrete-Time Control Loop (per frame)
-
-At each frame with timestep `dt` (seconds):
-
-1. Measure the robot state and target reference  
-2. Compute tracking error `e`
-3. Compute PID output `u`
-4. Apply realism (noise, bias, lag, saturation)
-5. Update robot motion (plant dynamics)
-6. Log metrics (error chart, improvement chart)
+> This page is written to render cleanly on GitHub using LaTeX math blocks.
+> If your GitHub view doesn’t render math, see **Appendix: Fallback (SVG)** at the end.
 
 ---
 
-## 2. Error Definition (Tracking Objective)
+## 0. Notation
 
-### 2.1 Centerline / Path Tracking (lateral error)
-A common definition is the robot’s lateral offset from a target line:
-
-\[
-e(t)=y_{\text{robot}} - y_{\text{target}}(x_{\text{robot}})
-\]
-
-- `e > 0` means robot is above the line (depending on your coordinate convention).
-- `e < 0` means robot is below the line.
-
-### 2.2 General Reference Tracking
-If the target is a reference signal \(r(t)\) and the measured output is \(y(t)\):
-
-\[
-e(t) = r(t) - y(t)
-\]
+- Discrete time index: \(k = 0,1,2,\dots\)  
+- Timestep: \(dt > 0\) (seconds per frame)  
+- Error: \(e_k\)  
+- Integral state: \(I_k\)  
+- Derivative estimate: \(D_k\)  
+- Control output (command): \(u_k\)  
+- Applied steering after lag: \(s_k\)
 
 ---
 
-## 3. PID Controller (Continuous Form)
+## 1. Closed-loop system (what the sandbox simulates)
 
-The PID control law:
+A typical sandbox loop is:
 
-\[
-u(t)=K_p e(t) + K_i \int_0^t e(\tau)\, d\tau + K_d \frac{de(t)}{dt}
-\]
+$$
+\text{Sensor} \rightarrow e_k \rightarrow \text{PID}(K_p,K_i,K_d) \rightarrow u_k
+\rightarrow \text{Actuator dynamics} \rightarrow s_k \rightarrow \text{Robot dynamics} \rightarrow \text{Sensor}
+$$
 
-Where:
-- \(K_p\): proportional gain
-- \(K_i\): integral gain
+---
+
+## 2. Error definition (tracking objective)
+
+### 2.1 Reference tracking (generic)
+If the desired reference is \(r_k\) and the measured output is \(y_k\):
+
+$$
+e_k = r_k - y_k
+$$
+
+### 2.2 Centerline / path tracking (common in the sandbox)
+If the robot is at \((x_k, y_k)\) and the target centerline is \(y = y_\text{ref}(x)\):
+
+$$
+e_k = y_k - y_\text{ref}(x_k)
+$$
+
+> Depending on your coordinate system, the sign convention may flip.
+> The important part is consistency: “positive error” should mean “steer one way.”
+
+---
+
+## 3. PID controller (continuous-time form)
+
+The classic PID law:
+
+$$
+u(t) = K_p e(t) + K_i \int_0^t e(\tau)\,d\tau + K_d \frac{de(t)}{dt}
+$$
+
+- \(K_p\): proportional gain  
+- \(K_i\): integral gain  
 - \(K_d\): derivative gain
-- \(u(t)\): control output (steering / turn command)
 
 ---
 
-## 4. PID Controller (Discrete Implementation)
+## 4. PID controller (discrete implementation)
 
-The sandbox runs in discrete time (frame-by-frame).
+### 4.1 Integral update
+A standard rectangular (Euler) integration:
 
-### 4.1 Integral term (accumulated error)
-\[
+$$
 I_k = I_{k-1} + e_k \, dt
-\]
+$$
 
-### 4.2 Derivative term (rate of change)
-\[
+### 4.2 Derivative estimate
+A first-order backward difference:
+
+$$
 D_k = \frac{e_k - e_{k-1}}{dt}
-\]
+$$
 
-### 4.3 Output (PID sum)
-\[
+### 4.3 PID output
+The discrete PID output:
+
+$$
 u_k = K_p e_k + K_i I_k + K_d D_k
-\]
+$$
 
 ---
 
-## 5. Saturation and Clamping (Actuator Limits)
+## 5. Saturation (steering limits) and clamping
 
-Real actuators have a maximum steering magnitude. Clamp output:
+Real steering/turning has limits. Clamp the output:
 
-\[
-u_k \leftarrow \text{clip}(u_k, -u_{\max}, u_{\max})
-\]
+$$
+u_k \leftarrow \mathrm{clip}(u_k,\,-u_{\max},\,u_{\max})
+$$
 
-Optional (recommended): integral clamping to avoid windup:
+where
 
-\[
-I_k \leftarrow \text{clip}(I_k, -I_{\max}, I_{\max})
-\]
+$$
+\mathrm{clip}(x,a,b)=\max(a,\min(x,b))
+$$
+
+### 5.1 Integral windup (why it happens)
+If \(u_k\) is saturated but the integrator keeps accumulating, then \(I_k\) can grow large and cause overshoot.
+
+### 5.2 Anti-windup (simple and effective)
+
+**Method A — integral clamping**
+$$
+I_k \leftarrow \mathrm{clip}(I_k,\,-I_{\max},\,I_{\max})
+$$
+
+**Method B — conditional integration (only integrate when it helps)**
+One practical idea:
+
+- If \(u_k\) is saturated at \(+u_{\max}\) and \(e_k > 0\), skip integration  
+- If \(u_k\) is saturated at \(-u_{\max}\) and \(e_k < 0\), skip integration  
+- Otherwise integrate normally
+
+This reduces runaway integral growth.
 
 ---
 
-## 6. Integral Windup and Anti-Windup (Practical Detail)
+## 6. Sensor noise (measurement imperfection)
 
-If the output saturates, the integral can keep growing and cause overshoot.
+Often you measure a noisy error:
 
-Two common anti-windup approaches:
+$$
+e_k^{\text{meas}} = e_k + \eta_k
+$$
 
-### 6.1 Integral clamping
-\[
-I_k = \text{clip}(I_k, -I_{\max}, I_{\max})
-\]
+A common noise model:
 
-### 6.2 Conditional integration (only integrate when not saturated)
-If \(u_k\) is saturated, skip updating \(I_k\) (or integrate only if it helps de-saturate).
-
----
-
-## 7. Sensor Noise (Measurement Imperfection)
-
-The measured error is often noisy:
-
-\[
-e^{\text{meas}}_k = e_k + \eta_k
-\]
-
-Where \(\eta_k\) is random noise (often Gaussian):
-
-\[
+$$
 \eta_k \sim \mathcal{N}(0,\sigma^2)
-\]
+$$
 
-Noise especially affects the derivative term (because it amplifies rapid changes).
-
----
-
-## 8. Steering Bias (Systematic Imperfection)
-
-A constant steering bias models misalignment / calibration error:
-
-\[
-u^{\text{real}}_k = u_k + b
-\]
-
-This creates steady-state error that **P/PD** may not fully eliminate.  
-The **I** term is typically needed to remove it.
+**Important:** Derivatives amplify noise, so a noisy \(e_k\) can make \(D_k\) jittery.
 
 ---
 
-## 9. Actuator Lag / First-Order Response (Your `ease_towards`)
+## 7. Steering bias (systematic imperfection)
 
-Instead of instantly applying \(u_k\), the steering state \(s_k\) follows with lag.
+A fixed bias term models misalignment or calibration errors:
 
-### 9.1 Continuous first-order model
-\[
-\dot{s}(t) = \frac{u(t) - s(t)}{\tau}
-\]
+$$
+u_k^{\text{real}} = u_k + b
+$$
 
-- \(s(t)\): actual achieved steering
-- \(u(t)\): commanded steering
-- \(\tau\): time constant (bigger → slower response)
+Bias often causes **steady-state error** if you use only P or PD.  
+A small \(K_i\) is usually what removes it.
 
-### 9.2 Discrete update (exact solution form)
-\[
-s_k = s_{k-1} + \alpha \left(u_k - s_{k-1}\right)
-\]
-\[
+---
+
+## 8. Actuator lag (first-order steering dynamics)
+
+In many sandboxes, the steering doesn’t change instantly.  
+A standard actuator model is first-order lag:
+
+### 8.1 Continuous-time actuator model
+$$
+\dot{s}(t)=\frac{u(t)-s(t)}{\tau}
+$$
+
+- \(s(t)\): actual steering state  
+- \(u(t)\): commanded steering  
+- \(\tau\): time constant (larger \(\tau\) = slower response)
+
+### 8.2 Discrete-time exact update (matches “ease_towards”)
+Solving the ODE over a timestep \(dt\) gives:
+
+$$
+s_k = s_{k-1} + \alpha\,(u_k - s_{k-1})
+$$
+
+where
+
+$$
 \alpha = 1 - e^{-dt/\tau}
-\]
+$$
 
-This matches the code pattern:
+This is why your code often looks like:
 - `s = ease_towards(s, u, dt, tau)`
 
 ---
 
-## 10. Plant Dynamics (Robot Motion Model)
+## 9. Robot motion (plant dynamics)
 
-A simple kinematic update:
+A common “unicycle / kinematic” model:
 
-### 10.1 Heading update
-\[
-\theta_k = \theta_{k-1} + \omega_k\, dt
-\]
+### 9.1 Heading update
+If \(s_k\) acts like turn rate \(\omega_k\) (or proportional to it):
 
-Where \(\omega_k\) is turn rate derived from steering (implementation-dependent).
+$$
+\theta_k = \theta_{k-1} + \omega_k\,dt
+$$
 
-### 10.2 Position update
-\[
-x_k = x_{k-1} + v \cos(\theta_k)\, dt
-\]
-\[
-y_k = y_{k-1} + v \sin(\theta_k)\, dt
-\]
+### 9.2 Position update
+With forward speed \(v\):
 
-- \(v\): forward speed
-- \((x,y)\): robot position
-- \(\theta\): heading angle
+$$
+x_k = x_{k-1} + v\cos(\theta_k)\,dt
+$$
+$$
+y_k = y_{k-1} + v\sin(\theta_k)\,dt
+$$
 
----
-
-## 11. Error Chart (What You Plot)
-
-The error chart typically shows \(e_k\) over time.
-
-Useful interpretations:
-- Large oscillations → \(K_p\) too high, or \(K_d\) too low
-- Slow convergence / steady offset → \(K_i\) too low (or bias exists)
-- Noisy spikes → derivative too high or sensor noise too large
+> Some sandboxes use “steering angle” rather than “turn rate”. The idea is the same:
+> steering influences heading change; heading plus speed updates position.
 
 ---
 
-## 12. Performance / Improvement Metric (Cycle Score)
+## 10. Error chart (what you see and how to read it)
 
-To compare “how good” a PID setting is, define a cost \(J\).
+You plot \(e_k\) over time.
 
-### 12.1 Mean absolute error (MAE)
-\[
-J = \frac{1}{N}\sum_{k=1}^{N} |e_k|
-\]
-
-### 12.2 Root mean square error (RMSE)
-\[
-J = \sqrt{\frac{1}{N}\sum_{k=1}^{N} e_k^2}
-\]
-
-Lower \(J\) means better tracking.
-
-### 12.3 Best-so-far tracking
-\[
-J_{\text{best}} \leftarrow \min(J_{\text{best}}, J_{\text{current}})
-\]
-
-This is what many “Improvement charts” visualize across cycles.
+Typical patterns:
+- Large oscillations: \(K_p\) too high, or \(K_d\) too low  
+- Slow correction: \(K_p\) too low  
+- Steady offset / drift: bias exists and \(K_i\) too low  
+- Noisy spikes: sensor noise high, or \(K_d\) too high  
 
 ---
 
-## 13. Auto Tuning: Shadow Simulation Search (Concept)
+## 11. Performance metrics (improvement chart)
 
-Auto-tuning often works like:
+To compare PID settings, define a cost \(J\) over a time window of \(N\) frames.
 
-1. Propose candidate gains \((K_p, K_i, K_d)\)
-2. Run a fast “shadow” simulation
-3. Compute a cost \(J\)
-4. Keep the best candidate
-5. Repeat and refine
+### 11.1 Mean Absolute Error (MAE)
+$$
+J_{\text{MAE}}=\frac{1}{N}\sum_{k=1}^{N}\left|e_k\right|
+$$
 
-Formally:
-\[
-(K_p^*,K_i^*,K_d^*) = \arg\min_{(K_p,K_i,K_d)} J(K_p,K_i,K_d)
-\]
+### 11.2 Root Mean Square Error (RMSE)
+$$
+J_{\text{RMSE}}=\sqrt{\frac{1}{N}\sum_{k=1}^{N}e_k^2}
+$$
 
-The search method can be random search, hill climbing, evolutionary strategies, etc.
+### 11.3 Best-so-far tracking
+If each “cycle” produces one cost value \(J^{(c)}\):
 
----
+$$
+J_{\text{best}} \leftarrow \min\left(J_{\text{best}},\,J^{(c)}\right)
+$$
 
-## 14. Practical Tuning Intuition (Quick Reference)
-
-- Increase \(K_p\): faster response, more overshoot/oscillation risk
-- Increase \(K_d\): damps oscillation, sensitive to noise
-- Increase \(K_i\): removes steady-state error, can cause windup/slow oscillations
-
-A typical workflow:
-1. Tune \(K_p\) until it tracks but starts to oscillate
-2. Add \(K_d\) to damp oscillation
-3. Add a small \(K_i\) to eliminate bias / steady error
+A typical improvement chart plots:
+- the current cycle score \(J^{(c)}\)
+- the best score so far \(J_\text{best}\)
 
 ---
 
-## 15. Mapping Guide (Math → Code Variables)
+## 12. Auto-tuning idea: Shadow Simulation Search
 
-Common variable mapping in the sandbox:
+The auto mode treats tuning as an optimization problem:
 
-- `error` → \(e_k\)
-- `integral` → \(I_k\)
-- `prev_error` → \(e_{k-1}\)
-- `derivative` → \(D_k\)
-- `output` / `u` → \(u_k\)
-- `steer` / `steering_state` → \(s_k\)
-- `tau` → \(\tau\)
-- `dt` → \(dt\)
-- `clamp` → \(\text{clip}(\cdot)\)
+$$
+(K_p^\*,K_i^\*,K_d^\*)=\arg\min_{(K_p,K_i,K_d)} J(K_p,K_i,K_d)
+$$
+
+A simple loop:
+1. Sample candidate gains \((K_p,K_i,K_d)\)
+2. Run a short simulation with those gains
+3. Compute cost \(J\)
+4. Keep the best and repeat
+
+Common search styles:
+- random search
+- hill climbing
+- evolutionary strategies
 
 ---
 
-## 16. If You Want This to Match Your Exact Code
+## 13. Quick tuning intuition (practical)
 
-If you paste the exact PID update snippet (where you compute `error`, `integral`, `derivative`, `output`, and apply `ease_towards`), we can add a section:
+- Increase \(K_p\): faster response, more overshoot risk  
+- Increase \(K_d\): reduces oscillation, but can amplify noise  
+- Increase \(K_i\): removes steady-state error (bias), but can cause windup  
 
-- **“Line-by-line annotation: PID step”**
-- **“Line-by-line annotation: plant update”**
-- **“Line-by-line annotation: scoring / improvement chart”**
+A simple workflow:
+1. Tune \(K_p\) until it responds quickly but starts oscillating  
+2. Add \(K_d\) to damp oscillations  
+3. Add a small \(K_i\) to remove steady drift / bias  
+
 ---
