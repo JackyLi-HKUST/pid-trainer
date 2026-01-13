@@ -4,9 +4,11 @@
 An interactive sandbox for learning **PID control** by tuning a differential-drive “robot” to track a moving centerline.  
 **Lightweight and simple**, but still includes realistic imperfections (sensor noise, actuator lag, steering bias), real-time plots, and automatic tuning methods/algorithms (more coming soon).
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Pygame](https://img.shields.io/badge/pygame-2.5%2B-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![Pygame](https://img.shields.io/badge/Pygame-2.5%2B-1f1f1f)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+![Status](https://img.shields.io/badge/Status-Active%20Development-blue)
 
 > **Demo** 
 >
