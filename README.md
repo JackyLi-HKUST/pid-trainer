@@ -56,14 +56,13 @@ https://github.com/user-attachments/assets/d381ae2f-4b01-4fbb-9070-9d1a7aeb0f99
     # .venv\Scripts\activate    # Windows
     pip install -r requirements.txt
 
-Optional `requirements.txt`:
-    pygame>=2.0
+
 
 ---
 
 ## Run
 
-    python -m pid_trainer
+    python main.py
 
 ---
 
