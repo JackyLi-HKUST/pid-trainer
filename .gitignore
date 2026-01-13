@@ -1,32 +1,74 @@
-# Prerequisites
-*.d
+# ---------------------------------
+# Python cache / compiled
+# ---------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+# ---------------------------------
+# Virtual environments
+# ---------------------------------
+.venv/
+venv/
+ENV/
+env/
+.conda/
+.condarc
 
-# Precompiled Headers
-*.gch
-*.pch
+# ---------------------------------
+# Packaging / build artifacts
+# ---------------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
+# ---------------------------------
+# Test / coverage
+# ---------------------------------
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
 
-# Fortran module files
-*.mod
-*.smod
+# ---------------------------------
+# IDEs / editors
+# ---------------------------------
+.vscode/
+.idea/
+*.iml
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# ---------------------------------
+# OS junk
+# ---------------------------------
+.DS_Store
+.DS_Store?
+Thumbs.db
+Desktop.ini
 
-# Executables
-*.exe
-*.out
-*.app
+# ---------------------------------
+# Logs
+# ---------------------------------
+*.log
+
+# ---------------------------------
+# Jupyter (if you ever use it)
+# ---------------------------------
+.ipynb_checkpoints/
+
+# ---------------------------------
+# Env / secrets
+# ---------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# ---------------------------------
+# Optional: PyInstaller (if you later package an .exe/.app)
+# ---------------------------------
+*.spec
