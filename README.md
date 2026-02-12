@@ -1,7 +1,7 @@
 # PID Trainer
 **By Jacky Li from HKUST**
 
-An interactive sandbox for learning **PID control** by tuning a differential-drive “robot” to track a moving centerline.  
+An interactive sandbox for learning **PID control** by tuning a differential-drive robot to track a moving centerline.  
 **Lightweight and simple**, but still includes realistic imperfections (sensor noise, actuator lag, steering bias), real-time plots, and automatic tuning methods/algorithms (more coming soon).
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
